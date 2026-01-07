@@ -1,6 +1,7 @@
 extends Node2D
 
 @export var ball_scene: PackedScene
+@onready var cam := $Camera2D
 @onready var score_label := $CanvasLayer/ScoreLabel
 
 var spawn_y := -220
@@ -24,9 +25,19 @@ func _ready():
 	_load_best_score()
 	_update_score_labels()
 
+	#КАМЕРА
+	var viewport_size = get_viewport_rect().size
+
+	# подгоняем масштаб под ширину стакана
+	var target_width = 600
+	var zoom_factor = viewport_size.x / target_width
+
+	cam.zoom = Vector2(zoom_factor, zoom_factor)
 
 
 func _input(event):
+	if game_over:
+		return
 	if event is InputEventMouseButton \
 	and event.button_index == MOUSE_BUTTON_LEFT \
 	and event.is_released() \
@@ -34,15 +45,20 @@ func _input(event):
 		spawn_ball()
 
 	
-	if game_over and event is InputEventKey and event.pressed and event.keycode == KEY_R:
-		get_tree().reload_current_scene()
+	# if game_over and event is InputEventKey and event.pressed and event.keycode == KEY_R:
+	# 	get_tree().reload_current_scene()
 
 
 func _trigger_game_over():
+	if game_over:
+		return
+
 	game_over = true
 	can_spawn = false
-	print("GAME OVER")
 	$CanvasLayer/GameOverLabel.visible = true
+	$CanvasLayer/RestartButton.visible = true
+
+
 
 
 func _process(_delta):
@@ -58,8 +74,11 @@ func _process(_delta):
 
 
 func spawn_ball():
+	if game_over:
+		return
 	if not can_spawn:
 		return
+
 
 	can_spawn = false
 
@@ -120,3 +139,7 @@ func _on_game_area_mouse_exited():
 func _on_aim_button_pressed():
 	$CurrentBallGhost.aim_enabled = !$CurrentBallGhost.aim_enabled
 
+
+
+func _on_restart_button_pressed():
+	get_tree().reload_current_scene()

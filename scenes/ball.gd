@@ -13,7 +13,7 @@ const COLORS := [
 	Color("#FFF176"),
 	Color("#FFB74D"),
 	Color("#BA68C8"),
-	Color("#F06292"),
+	Color("#f06292ff"),
 	Color("#4DD0E1"),
 	Color("#FFD54F"),
 	Color("#7986CB"),
@@ -26,19 +26,19 @@ func _ready():
 	add_to_group("balls")
 	contact_monitor = true
 	max_contacts_reported = 2
-	mass = RADII[size_level] * 0.5
+	mass = RADII[size_level] * 1.0
 	physics_material_override = PhysicsMaterial.new()
 	physics_material_override.bounce = 0.0
 	physics_material_override.friction = 0.7
 	continuous_cd = RigidBody2D.CCD_MODE_DISABLED
 
 	# твин спавна
-	scale = Vector2.ONE * 0.7
+	scale = Vector2.ONE * 0.5
 	var tw = create_tween()
 	tw.tween_property(self, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	var jitter := Vector2(
-		randf_range(-1.0, 1.0),
+		randf_range(-0.5, 0.5),
 		0
 	)
 	apply_impulse(jitter * 8.0)
@@ -100,7 +100,7 @@ func try_merge(other: Ball):
 
 
 func _start_delayed_merge(other: Ball) -> void:
-	await get_tree().create_timer(0.05).timeout  # ← вот реальная задержка
+	await get_tree().create_timer(0.02).timeout  # ← вот реальная задержка
 
 	if not is_instance_valid(other):
 		return
@@ -147,7 +147,7 @@ func _merge_with(other: Ball):
 	# твины мерджа
 	var tw = create_tween()
 	tw.tween_property(new_ball, "scale", Vector2.ONE * 1.2, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(new_ball, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(new_ball, "scale", Vector2.ONE, 0.01).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	queue_free()
 	other.queue_free()
@@ -163,26 +163,64 @@ func _make_circle_texture(size: int = 16) -> Texture2D:
 				img.set_pixel(x, y, Color(1, 1, 1))
 	return ImageTexture.create_from_image(img)
 
+# func _spawn_merge_particles(pos: Vector2, color: Color):
+# 	var p := CPUParticles2D.new()
+# 	p.texture = _make_circle_texture(16)
+# 	p.color = color
+# 	p.global_position = pos
+# 	p.z_index = 0
+# 	p.amount = 128
+# 	p.lifetime = 0.5
+# 	p.one_shot = true
+# 	p.explosiveness = 1.0
+# 	p.emitting = false
+# 	p.direction = Vector2(0, -1)
+# 	p.spread = 180
+# 	p.initial_velocity_min = 60
+# 	p.initial_velocity_max = 140
+# 	p.gravity = Vector2(0, 200)
+# 	p.scale_amount_min = 0.4
+# 	p.scale_amount_max = 0.8
+# 	get_tree().current_scene.add_child(p)
+# 	p.emitting = true
+# 	p.finished.connect(func():
+# 		p.queue_free()
+# 	)
+
 func _spawn_merge_particles(pos: Vector2, color: Color):
-	var p := CPUParticles2D.new()
+	var p := GPUParticles2D.new()
+
+	# ─── материал ───────────────────────────
+	var mat := ParticleProcessMaterial.new()
+	mat.color = color
+	mat.direction = Vector3(0, -1, 0)
+	mat.spread = 180.0
+
+	mat.initial_velocity_min = 60.0
+	mat.initial_velocity_max = 140.0
+	mat.gravity = Vector3(0, 200, 0)
+
+	mat.scale_min = 0.4
+	mat.scale_max = 0.8
+
+	p.process_material = mat
+
+	# ─── визуал ─────────────────────────────
 	p.texture = _make_circle_texture(16)
-	p.color = color
 	p.global_position = pos
 	p.z_index = 0
+
+	# ─── эмиссия ────────────────────────────
 	p.amount = 128
 	p.lifetime = 0.5
 	p.one_shot = true
 	p.explosiveness = 1.0
 	p.emitting = false
-	p.direction = Vector2(0, -1)
-	p.spread = 180
-	p.initial_velocity_min = 60
-	p.initial_velocity_max = 140
-	p.gravity = Vector2(0, 200)
-	p.scale_amount_min = 0.4
-	p.scale_amount_max = 0.8
+
 	get_tree().current_scene.add_child(p)
 	p.emitting = true
+
+	# ─── автоудаление ───────────────────────
 	p.finished.connect(func():
 		p.queue_free()
 	)

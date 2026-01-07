@@ -15,6 +15,17 @@ run/main_scene="uid://dyl1u24g3ijwt"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[display]
+
+window/size/viewport_width=360
+window/size/viewport_height=640
+window/stretch/mode="canvas_items"
+
+[physics]
+
+2d/run_on_separate_thread=true
+2d/default_gravity=1200.0
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
